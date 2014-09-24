@@ -36,9 +36,6 @@
     <ClInclude Include="Line.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Rectangle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="EllipceFigure.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -2,15 +2,13 @@
 //
 
 #include "stdafx.h"
+#include "Commdlg.h"
 #include "GraphicalEditor.h"
 #include "RectangleFigure.h"
 #include "EllipceFigure.h"
 #include "Line.h"
 
 #define MAX_LOADSTRING 100
-#define IDC_ELLIPSE_BUTTON 101
-#define IDC_RECTANGLE_BUTTON 102
-#define IDC_LINE_BUTTON 103
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
@@ -19,12 +17,13 @@ TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 BOOL fDraw = FALSE; 
 POINT ptPrevious; 
 Figure* figure;
+COLORREF color = RGB(0, 0, 0);
+int penWidth = 1;
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -50,6 +49,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GRAPHICALEDITOR));
+
+
 
 	// Main message loop:
 	while (GetMessage(&msg, NULL, 0, 0))
@@ -105,7 +106,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    HWND hWnd;
-   HWND ellipseButton, rectangleButtton, lineButton;
 
    hInst = hInstance; // Store instance handle in our global variable
 
@@ -120,25 +120,25 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
-   ellipseButton=CreateWindowEx(NULL, L"BUTTON",L"Ellipse",
-										WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
-										0,	0, 100, 40,
-										hWnd, (HMENU)IDC_ELLIPSE_BUTTON,
-										GetModuleHandle(NULL), NULL);
-
-	rectangleButtton=CreateWindowEx(NULL, L"BUTTON",L"Rectangle",
-										WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
-										100, 0, 100, 40,
-										hWnd, (HMENU)IDC_RECTANGLE_BUTTON,
-										GetModuleHandle(NULL), NULL);
-	lineButton=CreateWindowEx(NULL, L"BUTTON",L"Line",
-										WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
-										200, 0, 100, 40,
-										hWnd, (HMENU)IDC_LINE_BUTTON,
-										GetModuleHandle(NULL), NULL);
-
    return TRUE;
 }
+
+COLORREF ShowColorDialog(HWND hwnd)
+{
+	CHOOSECOLOR chooseColor;                 
+	static COLORREF crCustClr[16];     
+
+	ZeroMemory(&chooseColor, sizeof(chooseColor));
+	chooseColor.lStructSize = sizeof(chooseColor);
+	chooseColor.hwndOwner = hwnd;
+	chooseColor.lpCustColors = (LPDWORD) crCustClr;
+	chooseColor.rgbResult = RGB(0, 255, 0);
+	chooseColor.Flags = CC_FULLOPEN | CC_RGBINIT;
+	ChooseColor(&chooseColor);
+
+	return chooseColor.rgbResult;
+}
+
 
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
@@ -155,6 +155,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int wmId, wmEvent;
 	PAINTSTRUCT ps;
 	HDC hdc;
+	//HDC mdc = CreateCompatibleDC(hdc);
 
 	switch (message)
 	{
@@ -164,20 +165,41 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// Разобрать выбор в меню:
 		switch (wmId)
 		{
-		case IDM_ABOUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
-		case IDC_ELLIPSE_BUTTON:
-			figure = new EllipceFigure(RGB(255, 0, 0), 3);
+		case IDM_PEN:
+			figure = new Line(color, penWidth);
 			break;
-		case IDC_RECTANGLE_BUTTON:
-			figure = new RectangleFigure(RGB(255, 0, 0), 3);
+		case IDM_ELLIPSE:
+			figure = new EllipceFigure(color, penWidth);
 			break;
-		case IDC_LINE_BUTTON:
-			figure = new Line(RGB(255, 0, 0), 3);
+		case IDM_RECTANGLE:
+			figure = new RectangleFigure(color, penWidth);
+			break;
+		case IDM_COLOR:
+			color = ShowColorDialog(hWnd);
+			figure->setPenColor(color);
+			break;
+		case IDM_PENWIDTH_1:
+			penWidth = 1;
+			figure->setPenWidth(penWidth);
+			break;
+		case IDM_PENWIDTH_2:
+			penWidth = 2;
+			figure->setPenWidth(penWidth);
+			break;
+		case IDM_PENWIDTH_4:
+			penWidth = 4;
+			figure->setPenWidth(penWidth);
+			break;
+		case IDM_PENWIDTH_8:
+			penWidth = 8;
+			figure->setPenWidth(penWidth);
+			break;
+		case IDM_PENWIDTH_12:
+			penWidth = 12;
+			figure->setPenWidth(penWidth);
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
@@ -189,12 +211,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		ptPrevious.y = HIWORD(lParam); 
 		break; 
 	case WM_CREATE: 
-		figure = new Line(RGB(255, 0, 0), 3);
+		figure = new Line(color, penWidth);
 		break;
 	case WM_LBUTTONUP: 
 		if (fDraw) 
 		{ 
-			hdc = GetDC(hWnd); 
+			hdc = GetDC(hWnd);
 			figure->setPoints(ptPrevious, lParam); 
 			figure->drawOnLeftButtomUp(hdc);
 			ReleaseDC(hWnd, hdc); 
@@ -209,7 +231,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			figure->setPoints(ptPrevious, lParam); 
 			ptPrevious = figure->drawOnMouseMove(hdc);
 			ReleaseDC(hWnd, hdc); 
-			PostMessage(hWnd, WM_PAINT, NULL, NULL);
+			//PostMessage(hWnd, WM_PAINT, NULL, NULL);
 		} 
 		break; 
 
@@ -225,24 +247,4 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
-}
-
-// Message handler for about box.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
-
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
-		break;
-	}
-	return (INT_PTR)FALSE;
 }
