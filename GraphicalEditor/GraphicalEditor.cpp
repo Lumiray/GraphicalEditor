@@ -140,6 +140,89 @@ COLORREF GetColor(HWND hwnd)
 		return NULL;
 }
 
+HDC CreateMetafile(HDC hdc, HWND hWnd)
+{ 
+	// Determine the picture frame dimensions.   
+	int iWidthMM = GetDeviceCaps(hdc, HORZSIZE); 
+	int iHeightMM = GetDeviceCaps(hdc, VERTSIZE); 
+	int iWidthPels = GetDeviceCaps(hdc, HORZRES); 
+	int iHeightPels = GetDeviceCaps(hdc, VERTRES);  
+	// Retrieve the coordinates of the client  
+	// rectangle, in pixels.  
+	RECT rect;
+	GetClientRect(hWnd, &rect); 
+ 
+	//// Convert client coordinates to .01-mm units.  
+	//// Use iWidthMM, iWidthPels, iHeightMM, and  
+	//// iHeightPels to determine the number of  
+	//// .01-millimeter units per pixel in the x-  
+	////  and y-directions.  
+	//rect.left = (rect.left * iWidthMM * 100)/iWidthPels; 
+	//rect.top = (rect.top * iHeightMM * 100)/iHeightPels; 
+	//rect.right = (rect.right * iWidthMM * 100)/iWidthPels; 
+	//rect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels; 
+ //
+	//// Load the filename filter from the string table.   
+	//LoadString(hInst, IDS_FILTERSTRING, 
+	//	 (LPSTR)szFilter, sizeof(szFilter)); 
+ //
+	//// Replace the '%' separators that are embedded  
+	//// between the strings in the string-table entry  
+	//// with '\0'.  
+ //
+	//for (i=0; szFilter[i]!='\0'; i++) 
+	//	if (szFilter[i] == '%') 
+	//			szFilter[i] = '\0'; 
+ //
+	//// Load the dialog title string from the table.  
+ //
+	//LoadString(hInst, IDS_TITLESTRING, 
+	//	 (LPSTR)szTitle, sizeof(szTitle)); 
+ //
+	//// Initialize the OPENFILENAME members.  
+ //
+	//szFile[0] = '\0'; 
+ //
+	//Ofn.lStructSize = sizeof(OPENFILENAME); 
+	//Ofn.hwndOwner = hWnd; 
+	//Ofn.lpstrFilter = szFilter; 
+	//Ofn.lpstrFile= szFile; 
+	//Ofn.nMaxFile = sizeof(szFile)/ sizeof(*szFile); 
+	//Ofn.lpstrFileTitle = szFileTitle; 
+	//Ofn.nMaxFileTitle = sizeof(szFileTitle); 
+	//Ofn.lpstrInitialDir = (LPSTR)NULL; 
+	//Ofn.Flags = OFN_SHOWHELP | OFN_OVERWRITEPROMPT; 
+	//Ofn.lpstrTitle = szTitle; 
+ //
+	//// Display the Filename common dialog box. The  
+	//// filename specified by the user is passed  
+	//// to the CreateEnhMetaFile function and used to  
+	//// store the metafile on disk.  
+ //
+	//GetSaveFileName(&Ofn); 
+ //
+	//// Load the description from the string table.  
+ //
+	//LoadString(hInst, IDS_DESCRIPTIONSTRING, 
+	//	 (LPSTR)szDescription, sizeof(szDescription)); 
+ //
+	//// Replace the '%' string separators that are  
+	//// embedded between strings in the string-table  
+	//// entry with '\0'.  
+ //
+	//for (i=0; szDescription[i]!='\0'; i++) 
+	//{
+	//	if (szDescription[i] == '%') 
+	//			szDescription[i] = '\0'; 
+	//}
+ 
+	// Create the metafile device context.  
+ //
+	//return CreateEnhMetaFile(hdc, 
+	//		  (LPTSTR) Ofn.lpstrFile, 
+	//		  &rect, (LPSTR)szDescription); 
+	return NULL;
+}
 
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
