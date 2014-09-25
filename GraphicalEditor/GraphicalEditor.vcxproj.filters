@@ -30,16 +30,16 @@
     <ClInclude Include="GraphicalEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Figure.h">
+    <ClInclude Include="Pen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Line.h">
+    <ClInclude Include="Shape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EllipceFigure.h">
+    <ClInclude Include="EllipseShape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RectangleFigure.h">
+    <ClInclude Include="RectangleShape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -50,16 +50,16 @@
     <ClCompile Include="GraphicalEditor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Figure.cpp">
+    <ClCompile Include="Pen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Line.cpp">
+    <ClCompile Include="Shape.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EllipceFigure.cpp">
+    <ClCompile Include="EllipseShape.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RectangleFigure.cpp">
+    <ClCompile Include="RectangleShape.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

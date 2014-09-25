@@ -79,21 +79,21 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EllipceFigure.h" />
-    <ClInclude Include="Figure.h" />
+    <ClInclude Include="EllipseShape.h" />
+    <ClInclude Include="Shape.h" />
     <ClInclude Include="GraphicalEditor.h" />
-    <ClInclude Include="Line.h" />
-    <ClInclude Include="RectangleFigure.h" />
+    <ClInclude Include="Pen.h" />
+    <ClInclude Include="RectangleShape.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="EllipceFigure.cpp" />
-    <ClCompile Include="Figure.cpp" />
+    <ClCompile Include="EllipseShape.cpp" />
+    <ClCompile Include="Shape.cpp" />
     <ClCompile Include="GraphicalEditor.cpp" />
-    <ClCompile Include="Line.cpp" />
-    <ClCompile Include="RectangleFigure.cpp" />
+    <ClCompile Include="Pen.cpp" />
+    <ClCompile Include="RectangleShape.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

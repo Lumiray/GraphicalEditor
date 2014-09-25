@@ -4,9 +4,6 @@
 #include "stdafx.h"
 #include "Commdlg.h"
 #include "GraphicalEditor.h"
-#include "RectangleFigure.h"
-#include "EllipceFigure.h"
-#include "Line.h"
 
 #define MAX_LOADSTRING 100
 
@@ -14,9 +11,9 @@
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
-BOOL fDraw = FALSE; 
-POINT ptPrevious; 
-Figure* figure;
+BOOL isDrawing = FALSE; 
+POINT startPoint; 
+Shape* shape;
 COLORREF color = RGB(0, 0, 0);
 int penWidth = 1;
 
@@ -49,8 +46,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GRAPHICALEDITOR));
-
-
 
 	// Main message loop:
 	while (GetMessage(&msg, NULL, 0, 0))
@@ -136,8 +131,7 @@ COLORREF GetColor(HWND hwnd)
 	chooseColor.Flags = CC_FULLOPEN | CC_RGBINIT;
 	if (ChooseColor(&chooseColor))
 		return chooseColor.rgbResult;
-	else
-		return NULL;
+	return NULL;
 }
 
 HDC CreateMetafile(HDC hdc, HWND hWnd)
@@ -252,69 +246,67 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DestroyWindow(hWnd);
 			break;
 		case IDM_PEN:
-			figure = new Line(color, penWidth);
+			shape = new Pen(color, penWidth);
 			break;
 		case IDM_ELLIPSE:
-			figure = new EllipceFigure(color, penWidth);
+			shape = new EllipseShape(color, penWidth);
 			break;
 		case IDM_RECTANGLE:
-			figure = new RectangleFigure(color, penWidth);
+			shape = new RectangleShape(color, penWidth);
 			break;
 		case IDM_COLOR:
 			COLORREF chosenColor;
 			if (chosenColor = GetColor(hWnd))
 				color = chosenColor; 
-			figure->setPenColor(color);
+			shape->SetPenColor(color);
 			break;
 		case IDM_PENWIDTH_1:
 			penWidth = 1;
-			figure->setPenWidth(penWidth);
+			shape->SetPenWidth(penWidth);
 			break;
 		case IDM_PENWIDTH_2:
 			penWidth = 2;
-			figure->setPenWidth(penWidth);
+			shape->SetPenWidth(penWidth);
 			break;
 		case IDM_PENWIDTH_4:
 			penWidth = 4;
-			figure->setPenWidth(penWidth);
+			shape->SetPenWidth(penWidth);
 			break;
 		case IDM_PENWIDTH_8:
 			penWidth = 8;
-			figure->setPenWidth(penWidth);
+			shape->SetPenWidth(penWidth);
 			break;
 		case IDM_PENWIDTH_12:
 			penWidth = 12;
-			figure->setPenWidth(penWidth);
+			shape->SetPenWidth(penWidth);
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
 		break;
 	case WM_LBUTTONDOWN: 
-		fDraw = TRUE; 
-		ptPrevious.x = LOWORD(lParam); 
-		ptPrevious.y = HIWORD(lParam); 
+		isDrawing = TRUE; 
+		startPoint.x = LOWORD(lParam); 
+		startPoint.y = HIWORD(lParam); 
 		break; 
 	case WM_CREATE: 
-		figure = new Line(color, penWidth);
+		shape = new Pen(color, penWidth);
 		break;
 	case WM_LBUTTONUP: 
-		if (fDraw) 
+		if (isDrawing) 
 		{ 
 			hdc = GetDC(hWnd);
-			figure->setPoints(ptPrevious, lParam); 
-			figure->drawOnLeftButtomUp(hdc);
+			shape->Draw(hdc, startPoint, lParam);
 			ReleaseDC(hWnd, hdc); 
 		} 
-		fDraw = FALSE; 
+		isDrawing = FALSE; 
 		break; 
  
 	case WM_MOUSEMOVE: 
-		if (fDraw) 
+		if (isDrawing) 
 		{ 
 			hdc = GetDC(hWnd); 
-			figure->setPoints(ptPrevious, lParam); 
-			ptPrevious = figure->drawOnMouseMove(hdc);
+			shape->Draw(hdc, startPoint, lParam);
 			ReleaseDC(hWnd, hdc); 
 			//PostMessage(hWnd, WM_PAINT, NULL, NULL);
 		} 
