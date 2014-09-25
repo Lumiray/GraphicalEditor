@@ -123,7 +123,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-COLORREF ShowColorDialog(HWND hwnd)
+COLORREF GetColor(HWND hwnd)
 {
 	CHOOSECOLOR chooseColor;                 
 	static COLORREF crCustClr[16];     
@@ -132,11 +132,12 @@ COLORREF ShowColorDialog(HWND hwnd)
 	chooseColor.lStructSize = sizeof(chooseColor);
 	chooseColor.hwndOwner = hwnd;
 	chooseColor.lpCustColors = (LPDWORD) crCustClr;
-	chooseColor.rgbResult = RGB(0, 255, 0);
+	chooseColor.rgbResult = RGB(0, 0, 0);
 	chooseColor.Flags = CC_FULLOPEN | CC_RGBINIT;
-	ChooseColor(&chooseColor);
-
-	return chooseColor.rgbResult;
+	if (ChooseColor(&chooseColor))
+		return chooseColor.rgbResult;
+	else
+		return NULL;
 }
 
 
@@ -155,7 +156,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int wmId, wmEvent;
 	PAINTSTRUCT ps;
 	HDC hdc;
-	//HDC mdc = CreateCompatibleDC(hdc);
 
 	switch (message)
 	{
@@ -178,7 +178,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			figure = new RectangleFigure(color, penWidth);
 			break;
 		case IDM_COLOR:
-			color = ShowColorDialog(hWnd);
+			COLORREF chosenColor;
+			if (chosenColor = GetColor(hWnd))
+				color = chosenColor; 
 			figure->setPenColor(color);
 			break;
 		case IDM_PENWIDTH_1:
