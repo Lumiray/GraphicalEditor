@@ -8,7 +8,6 @@ Things to do:
   - Polyline
   - Polygon
   - Text
-  - Eraser
+  - Eraser (cancel last erasing)
 3. Zooming (Drawing to MemoryDC)
 4. Moving drawing in window
-5. Drag-and-Drop
