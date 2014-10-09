@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "Commdlg.h"
 #include "GraphicalEditor.h"
+#include "ShellAPI.h"
 
 #define MAX_LOADSTRING 100
 
@@ -99,6 +100,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       CW_USEDEFAULT, 0, 900, 600, NULL, NULL, hInstance, NULL);
 
    openFileName.hInstance = hInst;
+   DragAcceptFiles(hWnd, true);
 
    if (!hWnd)
    {
@@ -126,9 +128,7 @@ HDC InitialiseEnhMetafileDC(HWND hWnd)
 	newRect.right = (rect.right * iWidthMM * 100)/iWidthPels; 
 	newRect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels;
 	metafileDC = CreateEnhMetaFile(windowDC, NULL, &newRect, NULL);
-	//memoryDC = CreateCompatibleDC(windowDC);
-	//hBitmap = CreateCompatibleBitmap(memoryDC, rect.right - rect.top, rect.bottom - rect.top);
-	//SelectObject(memoryDC, hBitmap);
+
 	ReleaseDC(hWnd, windowDC);
 	return metafileDC;
 }
@@ -167,6 +167,7 @@ VOID RefreshWindow(HWND hWnd)
 {
 	HDC windowDC = GetDC(hWnd);
 	HENHMETAFILE currentImage = RefreshMetafileDC(hWnd);
+
 	PlayEnhMetaFile(windowDC, currentImage, &rect);
 	PlayEnhMetaFile(metafileDC, currentImage, &rect);
 	DeleteEnhMetaFile(currentImage);
@@ -177,6 +178,7 @@ VOID SaveMetafile(HWND hWnd)
 { 
 	HDC windowDC = GetDC(hWnd);
 	HENHMETAFILE currentImage = RefreshMetafileDC(hWnd);
+	GetClientRect(hWnd, &rect);
 	// Determine the picture frame dimensions.   
 	int iWidthMM = GetDeviceCaps(windowDC, HORZSIZE); 
 	int iHeightMM = GetDeviceCaps(windowDC, VERTSIZE); 
@@ -236,7 +238,6 @@ VOID OpenMetafile(HWND hWnd)
 	TCHAR szDefExt[MAX_LOADSTRING];
 	TCHAR szFile[MAX_LOADSTRING];
 	TCHAR szFileTitle[MAX_LOADSTRING];
-	TCHAR szDescription[MAX_LOADSTRING];
 	LoadString(hInst, IDS_FILTERSTRING,(LPWSTR)szFilter, sizeof(szFilter)); 
 	for (int i=0; szFilter[i]!='\0'; i++) 
 	{
@@ -262,15 +263,6 @@ VOID OpenMetafile(HWND hWnd)
 	openFileName.nFileOffset = 0; 
 	openFileName.nFileExtension = 0; 
 	openFileName.lpstrDefExt = szDefExt;
- 
-	LoadString(hInst, IDS_DESCRIPTIONSTRING, 
-     (LPWSTR)szDescription, sizeof(szDescription)); 
-
-	for (int i = 0; szDescription[i]!='\0'; i++) 
-	{
-		if (szDescription[i] == '%') 
-				szDescription[i] = '\0'; 
-	}
 
 	GetOpenFileName(&openFileName);
 	HDC windowDC = GetDC(hWnd);
@@ -282,14 +274,21 @@ VOID OpenMetafile(HWND hWnd)
 	PlayEnhMetaFile(metafileDC, hemf, &rect);
 	ReleaseDC(hWnd, windowDC); 
 	DeleteEnhMetaFile(hemf);
-	//metafile = GetEnhMetaFile(openFileName.lpstrFile);
-	//ReleaseDC (hWnd, metafileDC);
-	//metafileDC = CreateEnhMetaFile(windowDC, NULL, &rect, NULL);
-	//ClearWindow(windowDC);
-	//PlayEnhMetaFile(windowDC, metafile, &rect);
-	//PlayEnhMetaFile(metafileDC, metafile, &rect);
-	//DeleteEnhMetaFile(metafile);
-	//ReleaseDC(hWnd, windowDC);
+}
+
+void OpenDropedFile(HWND hWnd, HDROP hDropInfo)
+{
+	TCHAR szFileName[MAX_PATH];
+	DragQueryFile (hDropInfo, 0, szFileName, MAX_PATH);
+	HDC windowDC = GetDC(hWnd);
+	HENHMETAFILE hemf = GetEnhMetaFile(szFileName);  
+	GetClientRect(hWnd, &rect); 
+	ClearWindow(windowDC);
+	RefreshMetafileDC(hWnd);
+	PlayEnhMetaFile(windowDC, hemf, &rect);
+	PlayEnhMetaFile(metafileDC, hemf, &rect);
+	ReleaseDC(hWnd, windowDC); 
+	DeleteEnhMetaFile(hemf);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -361,6 +360,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		GetClientRect(hWnd, &rect);
 		metafileDC = InitialiseEnhMetafileDC(hWnd);
+		break;
+
+	case WM_DROPFILES:
+		OpenDropedFile(hWnd, (HDROP) wParam);
 		break;
 
 	case WM_LBUTTONDOWN: 
