@@ -7,7 +7,7 @@ Things to do:
   - Line
   - Polyline
   - Polygon
-  - Text
-  - Eraser (cancel last erasing)
-3. Zooming (Drawing to MemoryDC)
-4. Moving drawing in window
+  - <b>Text</b>
+  - <b>Eraser (cancel last erasing)</b>
+3. Zooming (use MemoryDC)
+4. Moving drawing in window (use MemoryDC)
