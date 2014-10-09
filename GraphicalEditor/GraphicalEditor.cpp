@@ -20,13 +20,13 @@ OPENFILENAME openFileName;
 HDC memoryDC;
 HDC metafileDC;
 HBITMAP hBitmap;
-HENHMETAFILE metafile;
 RECT rect;
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
+HDC					InitialiseEnhMetafileDC(HWND hWnd);
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -35,10 +35,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
-
-	color = RGB(0, 0, 0);
-	penWidth = 1;
-	shape = new Pen(color, penWidth);
 
 	MSG msg;
 	HACCEL hAccelTable;
@@ -53,6 +49,10 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	{
 		return FALSE;
 	}
+
+	color = RGB(0, 0, 0);
+	penWidth = 1;
+	shape = new Pen(color, penWidth);
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GRAPHICALEDITOR));
 	// Main message loop:
@@ -89,37 +89,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	return RegisterClassEx(&wcex);
 }
 
-VOID InitialiseDC(HWND hWnd)
-{
-	HDC windowDC = GetDC(hWnd);
-	GetClientRect(hWnd, &rect);
-	metafileDC = CreateEnhMetaFile(windowDC, NULL, &rect, L"Somthing");
-	memoryDC = CreateCompatibleDC(windowDC);
-	hBitmap = CreateCompatibleBitmap(memoryDC, rect.right - rect.top, rect.bottom - rect.top);
-	SelectObject(memoryDC, hBitmap);
-	ReleaseDC(hWnd, windowDC);
-}
-
-HDC RefreshMetafileDC(HWND hWnd)
-{
-	HDC hDC = GetDC(hWnd);
-	RECT newRect;
-
-	int iWidthMM = GetDeviceCaps(hDC, HORZSIZE); 
-	int iHeightMM = GetDeviceCaps(hDC, VERTSIZE); 
-	int iWidthPels = GetDeviceCaps(hDC, HORZRES); 
-	int iHeightPels = GetDeviceCaps(hDC, VERTRES); 
-
-	newRect.left = (rect.left * iWidthMM * 100)/iWidthPels; 
-	newRect.top = (rect.top * iHeightMM * 100)/iHeightPels; 
-	newRect.right = (rect.right * iWidthMM * 100)/iWidthPels; 
-	newRect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels;
-
-	metafileDC = CreateEnhMetaFile(hDC, NULL, &newRect, NULL); 
-	ReleaseDC(hWnd, hDC);  
-	return metafileDC; 
-}
-
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    HWND hWnd;
@@ -129,7 +98,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, 900, 600, NULL, NULL, hInstance, NULL);
 
-   InitialiseDC(hWnd);
+   openFileName.hInstance = hInst;
 
    if (!hWnd)
    {
@@ -140,6 +109,37 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    UpdateWindow(hWnd);
 
    return TRUE;
+}
+
+HDC InitialiseEnhMetafileDC(HWND hWnd)
+{
+	HDC windowDC = GetDC(hWnd);
+	RECT newRect;
+
+	int iWidthMM = GetDeviceCaps(windowDC, HORZSIZE); 
+	int iHeightMM = GetDeviceCaps(windowDC, VERTSIZE); 
+	int iWidthPels = GetDeviceCaps(windowDC, HORZRES); 
+	int iHeightPels = GetDeviceCaps(windowDC, VERTRES); 
+
+	newRect.left = (rect.left * iWidthMM * 100)/iWidthPels; 
+	newRect.top = (rect.top * iHeightMM * 100)/iHeightPels; 
+	newRect.right = (rect.right * iWidthMM * 100)/iWidthPels; 
+	newRect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels;
+	metafileDC = CreateEnhMetaFile(windowDC, NULL, &newRect, NULL);
+	//memoryDC = CreateCompatibleDC(windowDC);
+	//hBitmap = CreateCompatibleBitmap(memoryDC, rect.right - rect.top, rect.bottom - rect.top);
+	//SelectObject(memoryDC, hBitmap);
+	ReleaseDC(hWnd, windowDC);
+	return metafileDC;
+}
+
+HENHMETAFILE RefreshMetafileDC(HWND hWnd)
+{
+	HDC windowDC = GetDC(hWnd);
+	HENHMETAFILE metafileHandler = CloseEnhMetaFile(metafileDC);
+	ReleaseDC (hWnd, metafileDC);
+	metafileDC = InitialiseEnhMetafileDC(hWnd);
+	return metafileHandler;
 }
 
 COLORREF GetColor(HWND hwnd)
@@ -166,6 +166,7 @@ VOID ClearWindow(HDC windowDC)
 VOID SaveMetafile(HWND hWnd)
 { 
 	HDC windowDC = GetDC(hWnd);
+	HENHMETAFILE currentImage = RefreshMetafileDC(hWnd);
 	// Determine the picture frame dimensions.   
 	int iWidthMM = GetDeviceCaps(windowDC, HORZSIZE); 
 	int iHeightMM = GetDeviceCaps(windowDC, VERTSIZE); 
@@ -190,7 +191,6 @@ VOID SaveMetafile(HWND hWnd)
 	szFile[0] = '\0';  
 	openFileName.lStructSize = sizeof(OPENFILENAME); 
 	openFileName.hwndOwner = hWnd; 
-	openFileName.hInstance = hInst;
 	openFileName.lpstrFilter = szFilter;
 	openFileName.lpstrFile= szFile; 
 	openFileName.nMaxFile = sizeof(szFile)/ sizeof(*szFile); 
@@ -199,19 +199,25 @@ VOID SaveMetafile(HWND hWnd)
 	openFileName.lpstrInitialDir = (LPWSTR)NULL; 
 	openFileName.Flags = OFN_SHOWHELP | OFN_OVERWRITEPROMPT; 
 	openFileName.lpstrDefExt = szDefExt;
+
+	TCHAR szDescription[MAX_LOADSTRING];
+	LoadString(hInst, IDS_DESCRIPTIONSTRING, 
+     (LPWSTR)szDescription, sizeof(szDescription)); 
+
+	for (int i = 0; szDescription[i]!='\0'; i++) 
+	{
+		if (szDescription[i] == '%') 
+				szDescription[i] = '\0'; 
+	}
  
 	GetSaveFileName(&openFileName); 
-
-	HDC mDC = CreateEnhMetaFile(windowDC, (LPTSTR) openFileName.lpstrFile, &rect, NULL); 
-	metafile = CloseEnhMetaFile(metafileDC);
-	ReleaseDC(hWnd, metafileDC);
-	metafileDC = RefreshMetafileDC(hWnd);
-	GetClientRect(hWnd, &rect);
-	PlayEnhMetaFile(mDC, metafile, &rect);
-	metafile = CloseEnhMetaFile(mDC);
-	PlayEnhMetaFile(metafileDC, metafile, &rect);
-	ReleaseDC(hWnd, mDC);
-	DeleteEnhMetaFile(metafile);
+	HDC newMetafileDC = CreateEnhMetaFile(windowDC, (LPTSTR) openFileName.lpstrFile, &rect, (LPWSTR)szDescription);
+	GetClientRect(hWnd, &rect); 
+	PlayEnhMetaFile(newMetafileDC, currentImage, &rect);
+	currentImage = CloseEnhMetaFile(newMetafileDC);
+	PlayEnhMetaFile(metafileDC, currentImage, &rect);
+	ReleaseDC(hWnd, newMetafileDC);
+	DeleteEnhMetaFile(currentImage);
 }
 
 VOID OpenMetafile(HWND hWnd)
@@ -258,14 +264,22 @@ VOID OpenMetafile(HWND hWnd)
 
 	GetOpenFileName(&openFileName);
 	HDC windowDC = GetDC(hWnd);
-	metafile = GetEnhMetaFile(openFileName.lpstrFile);
-	ReleaseDC (hWnd, metafileDC);
-	metafileDC = CreateEnhMetaFile(windowDC, NULL, &rect, NULL);
+	HENHMETAFILE hemf = GetEnhMetaFile(openFileName.lpstrFile);  
+	GetClientRect(hWnd, &rect); 
 	ClearWindow(windowDC);
-	PlayEnhMetaFile(windowDC, metafile, &rect);
-	PlayEnhMetaFile(metafileDC, metafile, &rect);
-	DeleteEnhMetaFile(metafile);
-	ReleaseDC(hWnd, windowDC);
+	RefreshMetafileDC(hWnd);
+	PlayEnhMetaFile(windowDC, hemf, &rect);
+	PlayEnhMetaFile(metafileDC, hemf, &rect);
+	ReleaseDC(hWnd, windowDC); 
+	DeleteEnhMetaFile(hemf);
+	//metafile = GetEnhMetaFile(openFileName.lpstrFile);
+	//ReleaseDC (hWnd, metafileDC);
+	//metafileDC = CreateEnhMetaFile(windowDC, NULL, &rect, NULL);
+	//ClearWindow(windowDC);
+	//PlayEnhMetaFile(windowDC, metafile, &rect);
+	//PlayEnhMetaFile(metafileDC, metafile, &rect);
+	//DeleteEnhMetaFile(metafile);
+	//ReleaseDC(hWnd, windowDC);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -273,7 +287,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int wmId;
 	PAINTSTRUCT ps;
 	HDC windowDC;
-	//POINT tempPoint;
+	POINT tempPoint;
 
 	switch (message)
 	{
@@ -334,6 +348,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
+	case WM_CREATE:
+		GetClientRect(hWnd, &rect);
+		metafileDC = InitialiseEnhMetafileDC(hWnd);
+		break;
+
 	case WM_LBUTTONDOWN: 
 		isDrawing = TRUE; 
 		startPoint.x = LOWORD(lParam); 
@@ -364,9 +383,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			else
 			{
-				//tempPoint = shape->GetStartPoint();
-				//shape->Draw(metafileDC, startPoint, lParam);
-				//shape->SetStartPoint(tempPoint);
+				tempPoint = shape->GetStartPoint();
+				shape->Draw(metafileDC, startPoint, lParam);
+				shape->SetStartPoint(tempPoint);
 				shape->Draw(windowDC, startPoint, lParam);
 			}
 			//shape->Draw(windowDC, startPoint, lParam);
