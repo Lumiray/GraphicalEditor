@@ -163,6 +163,16 @@ VOID ClearWindow(HDC windowDC)
 	FillRect(windowDC, &rect, (HBRUSH)(COLOR_WINDOW+1));
 }
 
+VOID RefreshWindow(HWND hWnd)
+{
+	HDC windowDC = GetDC(hWnd);
+	HENHMETAFILE currentImage = RefreshMetafileDC(hWnd);
+	PlayEnhMetaFile(windowDC, currentImage, &rect);
+	PlayEnhMetaFile(metafileDC, currentImage, &rect);
+	DeleteEnhMetaFile(currentImage);
+	ReleaseDC(hWnd, windowDC);
+}
+
 VOID SaveMetafile(HWND hWnd)
 { 
 	HDC windowDC = GetDC(hWnd);
@@ -366,7 +376,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			windowDC = GetDC(hWnd);
 			shape->Draw(windowDC, startPoint, lParam);
 			shape->Draw(metafileDC, startPoint, lParam);
-			//BitBlt(windowDC, 0, 0, rect.right - rect.left, rect.bottom - rect.top, memoryDC, 0, 0, SRCCOPY);
 			ReleaseDC(hWnd, windowDC); 
 		} 
 		isDrawing = FALSE; 
@@ -377,23 +386,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (isDrawing) 
 		{ 
 			windowDC = GetDC(hWnd);
-			if (!shape->isContinuous)
-			{
-				//ClearWindow(windowDC);
-			}
-			else
+			if (shape->isContinuous)
 			{
 				tempPoint = shape->GetStartPoint();
 				shape->Draw(metafileDC, startPoint, lParam);
 				shape->SetStartPoint(tempPoint);
 				shape->Draw(windowDC, startPoint, lParam);
 			}
-			//shape->Draw(windowDC, startPoint, lParam);
 			ReleaseDC(hWnd, windowDC); 
 			UpdateWindow(hWnd);
 			PostMessage(hWnd, WM_PAINT, NULL, NULL);
 		} 
 		break; 
+
+	case WM_SIZE:
+		RefreshWindow(hWnd);
+		break;
 
 	case WM_PAINT:
 		windowDC = BeginPaint(hWnd, &ps);
