@@ -8,5 +8,5 @@ protected:
 public:
 	Pen(COLORREF color, int width);
 	~Pen(void);
-	void Draw(HDC hdc, POINT dot1, LPARAM dot2);
+	void Draw(HDC hDC, POINT dot1, LPARAM dot2);
 };

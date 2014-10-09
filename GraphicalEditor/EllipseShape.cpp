@@ -12,13 +12,14 @@ EllipseShape::~EllipseShape(void)
 {
 }
 
-void EllipseShape::Draw(HDC hdc, POINT dot1, LPARAM dot2)
+void EllipseShape::Draw(HDC hDC, POINT dot1, LPARAM dot2)
 {
 	setPoints(dot1, dot2);
 	HPEN hpen = CreatePen(PS_SOLID,penWidth,penColor);
-	HPEN old_hpen = (HPEN)SelectObject(hdc, hpen);
-	SelectObject(hdc, GetStockObject(HOLLOW_BRUSH));
-	Ellipse(hdc, leftTop.x, leftTop.y,  rightBottom.x, rightBottom.y);
-	SelectObject(hdc, old_hpen);
+	HPEN old_hpen = (HPEN)SelectObject(hDC, hpen);
+	HBRUSH old_hbrush = (HBRUSH)SelectObject(hDC, GetStockObject(HOLLOW_BRUSH));
+	Ellipse(hDC, leftTop.x, leftTop.y,  rightBottom.x, rightBottom.y);
+	SelectObject(hDC, old_hpen);
+	SelectObject(hDC, old_hbrush);
 	DeleteObject(hpen);
 }

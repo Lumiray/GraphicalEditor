@@ -6,6 +6,6 @@ class RectangleShape :
 public:
 	RectangleShape(COLORREF color, int width);
 	~RectangleShape(void);
-	void Draw(HDC hdc, POINT dot1, LPARAM dot2);
+	void Draw(HDC hDC, POINT dot1, LPARAM dot2);
 };
 

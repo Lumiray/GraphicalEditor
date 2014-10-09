@@ -6,10 +6,21 @@ Shape::Shape(COLORREF color, int width)
 {
 	penColor = color;
 	penWidth = width;
+	isContinuous = FALSE;
 }
 
 Shape::~Shape(void)
 {
+}
+
+void Shape::SetStartPoint(POINT startPoint)
+{
+	leftTop = startPoint;
+}
+
+POINT Shape::GetStartPoint(void)
+{
+	return leftTop;
 }
 
 void Shape::setPoints(POINT dot1, LPARAM dot2)
@@ -29,6 +40,6 @@ void Shape::SetPenWidth(int width)
 	penWidth = width;
 }
 
-void Shape::Draw(HDC hdc, POINT dot1, LPARAM dot2)
+void Shape::Draw(HDC hDC, POINT dot1, LPARAM dot2)
 {
 }

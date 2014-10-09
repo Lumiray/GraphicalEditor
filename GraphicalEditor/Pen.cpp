@@ -4,6 +4,7 @@
 
 Pen::Pen(COLORREF color, int width):Shape(color, width)
 {
+	isContinuous = TRUE;
 }
 
 
@@ -19,12 +20,14 @@ void Pen::setPoints(POINT dot1, LPARAM dot2)
 	rightBottom.y = HIWORD(dot2);
 }
 
-void Pen::Draw(HDC hdc, POINT dot1, LPARAM dot2)
+void Pen::Draw(HDC hDC, POINT dot1, LPARAM dot2)
 {
 	setPoints(dot1, dot2);
 	HPEN hpen = CreatePen(PS_SOLID,penWidth,penColor);
-	SelectObject(hdc,hpen);
-	MoveToEx(hdc, leftTop.x, leftTop.y, NULL); 
-	LineTo(hdc, rightBottom.x, rightBottom.y);
+	HPEN old_hpen = (HPEN)SelectObject(hDC, hpen);
+	MoveToEx(hDC, leftTop.x, leftTop.y, NULL); 
+	LineTo(hDC, rightBottom.x, rightBottom.y);
+	SelectObject(hDC, old_hpen);
+	DeleteObject(hpen);
 	leftTop = rightBottom;
 }

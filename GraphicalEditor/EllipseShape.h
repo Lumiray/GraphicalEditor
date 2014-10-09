@@ -7,6 +7,6 @@ class EllipseShape :
 public:
 	EllipseShape(COLORREF color, int width);
 	~EllipseShape(void);
-	void Draw(HDC hdc, POINT dot1, LPARAM dot2);
+	void Draw(HDC hDC, POINT dot1, LPARAM dot2);
 };
 

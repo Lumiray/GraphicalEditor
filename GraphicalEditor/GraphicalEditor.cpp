@@ -14,8 +14,14 @@ TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 BOOL isDrawing = FALSE; 
 POINT startPoint; 
 Shape* shape;
-COLORREF color = RGB(0, 0, 0);
-int penWidth = 1;
+COLORREF color;
+int penWidth;
+OPENFILENAME openFileName;
+HDC memoryDC;
+HDC metafileDC;
+HBITMAP hBitmap;
+HENHMETAFILE metafile;
+RECT rect;
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -30,7 +36,10 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
- 	// TODO: Place code here.
+	color = RGB(0, 0, 0);
+	penWidth = 1;
+	shape = new Pen(color, penWidth);
+
 	MSG msg;
 	HACCEL hAccelTable;
 
@@ -46,7 +55,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GRAPHICALEDITOR));
-
 	// Main message loop:
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
@@ -60,26 +68,19 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	return (int) msg.wParam;
 }
 
-
-
-//
-//  FUNCTION: MyRegisterClass()
-//
-//  PURPOSE: Registers the window class.
-//
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
 	WNDCLASSEX wcex;
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
 
-	wcex.style			= CS_HREDRAW | CS_VREDRAW;
+	wcex.style			= CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 	wcex.lpfnWndProc	= WndProc;
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
 	wcex.hInstance		= hInstance;
 	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_GRAPHICALEDITOR));
-	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
+	wcex.hCursor		= LoadCursor(NULL, IDC_CROSS);
 	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+1);
 	wcex.lpszMenuName	= MAKEINTRESOURCE(IDC_GRAPHICALEDITOR);
 	wcex.lpszClassName	= szWindowClass;
@@ -88,16 +89,37 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	return RegisterClassEx(&wcex);
 }
 
-//
-//   FUNCTION: InitInstance(HINSTANCE, int)
-//
-//   PURPOSE: Saves instance handle and creates main window
-//
-//   COMMENTS:
-//
-//        In this function, we save the instance handle in a global variable and
-//        create and display the main program window.
-//
+VOID InitialiseDC(HWND hWnd)
+{
+	HDC windowDC = GetDC(hWnd);
+	GetClientRect(hWnd, &rect);
+	metafileDC = CreateEnhMetaFile(windowDC, NULL, &rect, L"Somthing");
+	memoryDC = CreateCompatibleDC(windowDC);
+	hBitmap = CreateCompatibleBitmap(memoryDC, rect.right - rect.top, rect.bottom - rect.top);
+	SelectObject(memoryDC, hBitmap);
+	ReleaseDC(hWnd, windowDC);
+}
+
+HDC RefreshMetafileDC(HWND hWnd)
+{
+	HDC hDC = GetDC(hWnd);
+	RECT newRect;
+
+	int iWidthMM = GetDeviceCaps(hDC, HORZSIZE); 
+	int iHeightMM = GetDeviceCaps(hDC, VERTSIZE); 
+	int iWidthPels = GetDeviceCaps(hDC, HORZRES); 
+	int iHeightPels = GetDeviceCaps(hDC, VERTRES); 
+
+	newRect.left = (rect.left * iWidthMM * 100)/iWidthPels; 
+	newRect.top = (rect.top * iHeightMM * 100)/iHeightPels; 
+	newRect.right = (rect.right * iWidthMM * 100)/iWidthPels; 
+	newRect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels;
+
+	metafileDC = CreateEnhMetaFile(hDC, NULL, &newRect, NULL); 
+	ReleaseDC(hWnd, hDC);  
+	return metafileDC; 
+}
+
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    HWND hWnd;
@@ -105,7 +127,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // Store instance handle in our global variable
 
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, 700, 500, NULL, NULL, hInstance, NULL);
+      CW_USEDEFAULT, 0, 900, 600, NULL, NULL, hInstance, NULL);
+
+   InitialiseDC(hWnd);
 
    if (!hWnd)
    {
@@ -134,124 +158,149 @@ COLORREF GetColor(HWND hwnd)
 	return NULL;
 }
 
-HDC CreateMetafile(HDC hdc, HWND hWnd)
-{ 
-	// Determine the picture frame dimensions.   
-	int iWidthMM = GetDeviceCaps(hdc, HORZSIZE); 
-	int iHeightMM = GetDeviceCaps(hdc, VERTSIZE); 
-	int iWidthPels = GetDeviceCaps(hdc, HORZRES); 
-	int iHeightPels = GetDeviceCaps(hdc, VERTRES);  
-	// Retrieve the coordinates of the client  
-	// rectangle, in pixels.  
-	RECT rect;
-	GetClientRect(hWnd, &rect); 
- 
-	//// Convert client coordinates to .01-mm units.  
-	//// Use iWidthMM, iWidthPels, iHeightMM, and  
-	//// iHeightPels to determine the number of  
-	//// .01-millimeter units per pixel in the x-  
-	////  and y-directions.  
-	//rect.left = (rect.left * iWidthMM * 100)/iWidthPels; 
-	//rect.top = (rect.top * iHeightMM * 100)/iHeightPels; 
-	//rect.right = (rect.right * iWidthMM * 100)/iWidthPels; 
-	//rect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels; 
- //
-	//// Load the filename filter from the string table.   
-	//LoadString(hInst, IDS_FILTERSTRING, 
-	//	 (LPSTR)szFilter, sizeof(szFilter)); 
- //
-	//// Replace the '%' separators that are embedded  
-	//// between the strings in the string-table entry  
-	//// with '\0'.  
- //
-	//for (i=0; szFilter[i]!='\0'; i++) 
-	//	if (szFilter[i] == '%') 
-	//			szFilter[i] = '\0'; 
- //
-	//// Load the dialog title string from the table.  
- //
-	//LoadString(hInst, IDS_TITLESTRING, 
-	//	 (LPSTR)szTitle, sizeof(szTitle)); 
- //
-	//// Initialize the OPENFILENAME members.  
- //
-	//szFile[0] = '\0'; 
- //
-	//Ofn.lStructSize = sizeof(OPENFILENAME); 
-	//Ofn.hwndOwner = hWnd; 
-	//Ofn.lpstrFilter = szFilter; 
-	//Ofn.lpstrFile= szFile; 
-	//Ofn.nMaxFile = sizeof(szFile)/ sizeof(*szFile); 
-	//Ofn.lpstrFileTitle = szFileTitle; 
-	//Ofn.nMaxFileTitle = sizeof(szFileTitle); 
-	//Ofn.lpstrInitialDir = (LPSTR)NULL; 
-	//Ofn.Flags = OFN_SHOWHELP | OFN_OVERWRITEPROMPT; 
-	//Ofn.lpstrTitle = szTitle; 
- //
-	//// Display the Filename common dialog box. The  
-	//// filename specified by the user is passed  
-	//// to the CreateEnhMetaFile function and used to  
-	//// store the metafile on disk.  
- //
-	//GetSaveFileName(&Ofn); 
- //
-	//// Load the description from the string table.  
- //
-	//LoadString(hInst, IDS_DESCRIPTIONSTRING, 
-	//	 (LPSTR)szDescription, sizeof(szDescription)); 
- //
-	//// Replace the '%' string separators that are  
-	//// embedded between strings in the string-table  
-	//// entry with '\0'.  
- //
-	//for (i=0; szDescription[i]!='\0'; i++) 
-	//{
-	//	if (szDescription[i] == '%') 
-	//			szDescription[i] = '\0'; 
-	//}
- 
-	// Create the metafile device context.  
- //
-	//return CreateEnhMetaFile(hdc, 
-	//		  (LPTSTR) Ofn.lpstrFile, 
-	//		  &rect, (LPSTR)szDescription); 
-	return NULL;
+VOID ClearWindow(HDC windowDC)
+{
+	FillRect(windowDC, &rect, (HBRUSH)(COLOR_WINDOW+1));
 }
 
-//
-//  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  PURPOSE:  Processes messages for the main window.
-//
-//  WM_COMMAND	- process the application menu
-//  WM_PAINT	- Paint the main window
-//  WM_DESTROY	- post a quit message and return
-//
-//
+VOID SaveMetafile(HWND hWnd)
+{ 
+	HDC windowDC = GetDC(hWnd);
+	// Determine the picture frame dimensions.   
+	int iWidthMM = GetDeviceCaps(windowDC, HORZSIZE); 
+	int iHeightMM = GetDeviceCaps(windowDC, VERTSIZE); 
+	int iWidthPels = GetDeviceCaps(windowDC, HORZRES); 
+	int iHeightPels = GetDeviceCaps(windowDC, VERTRES); 
+	GetClientRect(hWnd, &rect); 
+	rect.left = (rect.left * iWidthMM * 100)/iWidthPels; 
+	rect.top = (rect.top * iHeightMM * 100)/iHeightPels; 
+	rect.right = (rect.right * iWidthMM * 100)/iWidthPels; 
+	rect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels; 
+	TCHAR szFilter[MAX_LOADSTRING];
+	LoadString(hInst, IDS_FILTERSTRING,(LPWSTR)szFilter, sizeof(szFilter)); 
+	for (int i=0; szFilter[i]!='\0'; i++) 
+	{
+		if (szFilter[i] == '%') 
+            szFilter[i] = '\0'; 
+	}
+	TCHAR szFile[MAX_LOADSTRING];
+	TCHAR szFileTitle[MAX_LOADSTRING];
+	TCHAR szDefExt[MAX_LOADSTRING];
+	LoadString(hInst, IDS_DEFEXTSTRING, (LPTSTR)szDefExt, sizeof(szFilter)); 
+	szFile[0] = '\0';  
+	openFileName.lStructSize = sizeof(OPENFILENAME); 
+	openFileName.hwndOwner = hWnd; 
+	openFileName.hInstance = hInst;
+	openFileName.lpstrFilter = szFilter;
+	openFileName.lpstrFile= szFile; 
+	openFileName.nMaxFile = sizeof(szFile)/ sizeof(*szFile); 
+	openFileName.lpstrFileTitle = szFileTitle; 
+	openFileName.nMaxFileTitle = sizeof(szFileTitle); 
+	openFileName.lpstrInitialDir = (LPWSTR)NULL; 
+	openFileName.Flags = OFN_SHOWHELP | OFN_OVERWRITEPROMPT; 
+	openFileName.lpstrDefExt = szDefExt;
+ 
+	GetSaveFileName(&openFileName); 
+
+	HDC mDC = CreateEnhMetaFile(windowDC, (LPTSTR) openFileName.lpstrFile, &rect, NULL); 
+	metafile = CloseEnhMetaFile(metafileDC);
+	ReleaseDC(hWnd, metafileDC);
+	metafileDC = RefreshMetafileDC(hWnd);
+	GetClientRect(hWnd, &rect);
+	PlayEnhMetaFile(mDC, metafile, &rect);
+	metafile = CloseEnhMetaFile(mDC);
+	PlayEnhMetaFile(metafileDC, metafile, &rect);
+	ReleaseDC(hWnd, mDC);
+	DeleteEnhMetaFile(metafile);
+}
+
+VOID OpenMetafile(HWND hWnd)
+{
+	TCHAR szFilter[MAX_LOADSTRING];
+	TCHAR szDefExt[MAX_LOADSTRING];
+	TCHAR szFile[MAX_LOADSTRING];
+	TCHAR szFileTitle[MAX_LOADSTRING];
+	TCHAR szDescription[MAX_LOADSTRING];
+	LoadString(hInst, IDS_FILTERSTRING,(LPWSTR)szFilter, sizeof(szFilter)); 
+	for (int i=0; szFilter[i]!='\0'; i++) 
+	{
+		if (szFilter[i] == '%') 
+            szFilter[i] = '\0'; 
+	}
+	LoadString(hInst, IDS_DEFEXTSTRING, (LPTSTR)szDefExt, sizeof(szFilter)); 
+	szFile[0] = '\0'; 
+	szFileTitle[0] = '\0';
+	openFileName.lStructSize = sizeof(OPENFILENAME); 
+	openFileName.hwndOwner = hWnd;  
+	openFileName.lpstrFilter = szFilter;
+	openFileName.lpstrCustomFilter = (LPWSTR)NULL; 
+	openFileName.nMaxCustFilter = 0L; 
+	openFileName.nFilterIndex = 1L; 
+	openFileName.lpstrFile = szFile; 
+	openFileName.nMaxFile = MAX_LOADSTRING; 
+	openFileName.lpstrFileTitle = szFileTitle; 
+	openFileName.nMaxFileTitle = MAX_LOADSTRING; 
+	openFileName.lpstrInitialDir = (LPWSTR) NULL; 
+	openFileName.lpstrTitle = (LPWSTR)NULL; 
+	openFileName.Flags = OFN_SHOWHELP | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST; 
+	openFileName.nFileOffset = 0; 
+	openFileName.nFileExtension = 0; 
+	openFileName.lpstrDefExt = szDefExt;
+ 
+	LoadString(hInst, IDS_DESCRIPTIONSTRING, 
+     (LPWSTR)szDescription, sizeof(szDescription)); 
+
+	for (int i = 0; szDescription[i]!='\0'; i++) 
+	{
+		if (szDescription[i] == '%') 
+				szDescription[i] = '\0'; 
+	}
+
+	GetOpenFileName(&openFileName);
+	HDC windowDC = GetDC(hWnd);
+	metafile = GetEnhMetaFile(openFileName.lpstrFile);
+	ReleaseDC (hWnd, metafileDC);
+	metafileDC = CreateEnhMetaFile(windowDC, NULL, &rect, NULL);
+	ClearWindow(windowDC);
+	PlayEnhMetaFile(windowDC, metafile, &rect);
+	PlayEnhMetaFile(metafileDC, metafile, &rect);
+	DeleteEnhMetaFile(metafile);
+	ReleaseDC(hWnd, windowDC);
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	int wmId, wmEvent;
+	int wmId;
 	PAINTSTRUCT ps;
-	HDC hdc;
+	HDC windowDC;
+	//POINT tempPoint;
 
 	switch (message)
 	{
 	case WM_COMMAND:
 		wmId    = LOWORD(wParam);
-		wmEvent = HIWORD(wParam);
-		// Разобрать выбор в меню:
 		switch (wmId)
 		{
 		case IDM_EXIT:
+			CloseEnhMetaFile(metafileDC);
 			DestroyWindow(hWnd);
 			break;
+		case IDM_SAVE:
+			SaveMetafile(hWnd);
+			break;
+		case IDM_OPEN:
+			OpenMetafile(hWnd); 
+			break;
 		case IDM_PEN:
+			shape->~Shape();
 			shape = new Pen(color, penWidth);
 			break;
 		case IDM_ELLIPSE:
+			shape->~Shape();
 			shape = new EllipseShape(color, penWidth);
 			break;
 		case IDM_RECTANGLE:
+			shape->~Shape();
 			shape = new RectangleShape(color, penWidth);
 			break;
 		case IDM_COLOR:
@@ -284,40 +333,55 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
 		break;
+
 	case WM_LBUTTONDOWN: 
 		isDrawing = TRUE; 
 		startPoint.x = LOWORD(lParam); 
 		startPoint.y = HIWORD(lParam); 
+		shape->SetStartPoint(startPoint);
 		break; 
-	case WM_CREATE: 
-		shape = new Pen(color, penWidth);
-		break;
+
 	case WM_LBUTTONUP: 
 		if (isDrawing) 
 		{ 
-			hdc = GetDC(hWnd);
-			shape->Draw(hdc, startPoint, lParam);
-			ReleaseDC(hWnd, hdc); 
+			windowDC = GetDC(hWnd);
+			shape->Draw(windowDC, startPoint, lParam);
+			shape->Draw(metafileDC, startPoint, lParam);
+			//BitBlt(windowDC, 0, 0, rect.right - rect.left, rect.bottom - rect.top, memoryDC, 0, 0, SRCCOPY);
+			ReleaseDC(hWnd, windowDC); 
 		} 
 		isDrawing = FALSE; 
+		UpdateWindow(hWnd);
 		break; 
  
 	case WM_MOUSEMOVE: 
 		if (isDrawing) 
 		{ 
-			hdc = GetDC(hWnd); 
-			shape->Draw(hdc, startPoint, lParam);
-			ReleaseDC(hWnd, hdc); 
-			//PostMessage(hWnd, WM_PAINT, NULL, NULL);
+			windowDC = GetDC(hWnd);
+			if (!shape->isContinuous)
+			{
+				//ClearWindow(windowDC);
+			}
+			else
+			{
+				//tempPoint = shape->GetStartPoint();
+				//shape->Draw(metafileDC, startPoint, lParam);
+				//shape->SetStartPoint(tempPoint);
+				shape->Draw(windowDC, startPoint, lParam);
+			}
+			//shape->Draw(windowDC, startPoint, lParam);
+			ReleaseDC(hWnd, windowDC); 
+			UpdateWindow(hWnd);
+			PostMessage(hWnd, WM_PAINT, NULL, NULL);
 		} 
 		break; 
 
 	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
-		// TODO: добавьте любой код отрисовки...
+		windowDC = BeginPaint(hWnd, &ps);
 		EndPaint(hWnd, &ps);
 		break;
 	case WM_DESTROY:
+		DeleteDC(metafileDC);
 		PostQuitMessage(0);
 		break;
 	default:
