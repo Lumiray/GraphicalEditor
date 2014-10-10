@@ -318,6 +318,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			shape->~Shape();
 			shape = new Pen(color, penWidth);
 			break;
+		case IDM_LINE:
+			shape->~Shape();
+			shape = new Line(color, penWidth);
+			break;
 		case IDM_ELLIPSE:
 			shape->~Shape();
 			shape = new EllipseShape(color, penWidth);
