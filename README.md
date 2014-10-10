@@ -4,7 +4,6 @@ GraphicalEditor
 Things to do:
 
 1. Shapes:
-  - Line
   - Polyline
   - Polygon
   - <b>Text</b>

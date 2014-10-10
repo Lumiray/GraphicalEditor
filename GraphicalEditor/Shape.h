@@ -16,6 +16,7 @@ public:
 	void SetPenWidth(int width);
 	virtual void Draw(HDC hDC, POINT dot1, LPARAM dot2);
 	void SetStartPoint(POINT startPoint);
+	void CancelLastAction(void);
 	POINT GetStartPoint(void);
 	POINT startPoint;
 };

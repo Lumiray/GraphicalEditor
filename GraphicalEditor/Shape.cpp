@@ -44,3 +44,7 @@ void Shape::SetPenWidth(int width)
 void Shape::Draw(HDC hDC, POINT dot1, LPARAM dot2)
 {
 }
+
+void Shape::CancelLastAction(void)
+{
+}
