@@ -217,9 +217,6 @@ VOID SaveMetafile(HWND hWnd)
 { 
 	HDC windowDC = GetDC(hWnd);
 	HENHMETAFILE currentImage = RefreshMetafileDC(hWnd);
-
-	// Determine the picture frame dimensions.   
-	rect = GetRect(windowDC); 
 	
 	TCHAR buffer[4 * MAX_LOADSTRING];
 	OPENFILENAME openFileName = InitializeOpenFileNameStructure(hWnd, OFN_SHOWHELP | OFN_OVERWRITEPROMPT, buffer);
@@ -235,8 +232,9 @@ VOID SaveMetafile(HWND hWnd)
 	}
  
 	GetSaveFileName(&openFileName); 
-	HDC newMetafileDC = CreateEnhMetaFile(windowDC, (LPTSTR) openFileName.lpstrFile, &rect, (LPWSTR)szDescription);
-	GetClientRect(hWnd, &rect); 
+	GetClientRect(hWnd, &rect);
+	RECT newRect = GetRect(windowDC);
+	HDC newMetafileDC = CreateEnhMetaFile(windowDC, (LPTSTR) openFileName.lpstrFile, &newRect, (LPWSTR)szDescription);
 	PlayEnhMetaFile(newMetafileDC, currentImage, &rect);
 	currentImage = CloseEnhMetaFile(newMetafileDC);
 	PlayEnhMetaFile(metafileDC, currentImage, &rect);
@@ -313,6 +311,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case IDM_OPEN:
 			OpenMetafile(hWnd); 
+			break;
+		case IDM_CANCEL:
+			shape->CancelLastAction();
 			break;
 		case IDM_PEN:
 			shape->~Shape();
