@@ -17,7 +17,7 @@ POINT startPoint;
 Shape* shape;
 COLORREF color;
 int penWidth;
-OPENFILENAME openFileName;
+
 HDC memoryDC;
 HDC metafileDC;
 HBITMAP hBitmap;
@@ -99,9 +99,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, 900, 600, NULL, NULL, hInstance, NULL);
 
-   openFileName.hInstance = hInst;
-   DragAcceptFiles(hWnd, true);
-
    if (!hWnd)
    {
       return FALSE;
@@ -113,9 +110,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-HDC InitialiseEnhMetafileDC(HWND hWnd)
+RECT GetRect(HDC windowDC)
 {
-	HDC windowDC = GetDC(hWnd);
 	RECT newRect;
 
 	int iWidthMM = GetDeviceCaps(windowDC, HORZSIZE); 
@@ -127,6 +123,14 @@ HDC InitialiseEnhMetafileDC(HWND hWnd)
 	newRect.top = (rect.top * iHeightMM * 100)/iHeightPels; 
 	newRect.right = (rect.right * iWidthMM * 100)/iWidthPels; 
 	newRect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels;
+
+	return newRect;
+}
+
+HDC InitialiseEnhMetafileDC(HWND hWnd)
+{
+	HDC windowDC = GetDC(hWnd);
+	RECT newRect = GetRect(windowDC);
 	metafileDC = CreateEnhMetaFile(windowDC, NULL, &newRect, NULL);
 
 	ReleaseDC(hWnd, windowDC);
@@ -174,43 +178,51 @@ VOID RefreshWindow(HWND hWnd)
 	ReleaseDC(hWnd, windowDC);
 }
 
-VOID SaveMetafile(HWND hWnd)
-{ 
-	HDC windowDC = GetDC(hWnd);
-	HENHMETAFILE currentImage = RefreshMetafileDC(hWnd);
-	GetClientRect(hWnd, &rect);
-	// Determine the picture frame dimensions.   
-	int iWidthMM = GetDeviceCaps(windowDC, HORZSIZE); 
-	int iHeightMM = GetDeviceCaps(windowDC, VERTSIZE); 
-	int iWidthPels = GetDeviceCaps(windowDC, HORZRES); 
-	int iHeightPels = GetDeviceCaps(windowDC, VERTRES); 
-	GetClientRect(hWnd, &rect); 
-	rect.left = (rect.left * iWidthMM * 100)/iWidthPels; 
-	rect.top = (rect.top * iHeightMM * 100)/iHeightPels; 
-	rect.right = (rect.right * iWidthMM * 100)/iWidthPels; 
-	rect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels; 
-	TCHAR szFilter[MAX_LOADSTRING];
-	LoadString(hInst, IDS_FILTERSTRING,(LPWSTR)szFilter, sizeof(szFilter)); 
+OPENFILENAME InitializeOpenFileNameStructure(HWND hWnd, int flags, TCHAR* buffer)
+{
+	OPENFILENAME openFileName;
+	ZeroMemory(&openFileName, sizeof(openFileName));
+	TCHAR* szFilter = &buffer[0];
+	TCHAR* szDefExt = &buffer[MAX_LOADSTRING];
+	TCHAR* szFile = &buffer[2 * MAX_LOADSTRING];
+	TCHAR* szFileTitle = &buffer[3 * MAX_LOADSTRING];
+	LoadString(hInst, IDS_FILTERSTRING,(LPWSTR)szFilter, MAX_LOADSTRING); 
 	for (int i=0; szFilter[i]!='\0'; i++) 
 	{
 		if (szFilter[i] == '%') 
             szFilter[i] = '\0'; 
 	}
-	TCHAR szFile[MAX_LOADSTRING];
-	TCHAR szFileTitle[MAX_LOADSTRING];
-	TCHAR szDefExt[MAX_LOADSTRING];
-	LoadString(hInst, IDS_DEFEXTSTRING, (LPTSTR)szDefExt, sizeof(szFilter)); 
-	szFile[0] = '\0';  
+	LoadString(hInst, IDS_DEFEXTSTRING, (LPTSTR)szDefExt, MAX_LOADSTRING); 
+	szFile[0] = '\0'; 
+	szFileTitle[0] = '\0';
 	openFileName.lStructSize = sizeof(OPENFILENAME); 
-	openFileName.hwndOwner = hWnd; 
+	openFileName.hwndOwner = hWnd;  
+	openFileName.hInstance = hInst;
 	openFileName.lpstrFilter = szFilter;
-	openFileName.lpstrFile= szFile; 
-	openFileName.nMaxFile = sizeof(szFile)/ sizeof(*szFile); 
+	openFileName.lpstrCustomFilter = (LPWSTR)NULL;
+	openFileName.nFilterIndex = 1L; 
+	openFileName.lpstrFile = szFile; 
+	openFileName.nMaxFile = MAX_LOADSTRING; 
 	openFileName.lpstrFileTitle = szFileTitle; 
-	openFileName.nMaxFileTitle = sizeof(szFileTitle); 
-	openFileName.lpstrInitialDir = (LPWSTR)NULL; 
-	openFileName.Flags = OFN_SHOWHELP | OFN_OVERWRITEPROMPT; 
+	openFileName.nMaxFileTitle = MAX_LOADSTRING; 
+	openFileName.lpstrInitialDir = (LPWSTR) NULL; 
+	openFileName.lpstrTitle = (LPWSTR)NULL; 
+	openFileName.Flags = flags;  
 	openFileName.lpstrDefExt = szDefExt;
+
+	return openFileName;
+}
+
+VOID SaveMetafile(HWND hWnd)
+{ 
+	HDC windowDC = GetDC(hWnd);
+	HENHMETAFILE currentImage = RefreshMetafileDC(hWnd);
+
+	// Determine the picture frame dimensions.   
+	rect = GetRect(windowDC); 
+	
+	TCHAR buffer[4 * MAX_LOADSTRING];
+	OPENFILENAME openFileName = InitializeOpenFileNameStructure(hWnd, OFN_SHOWHELP | OFN_OVERWRITEPROMPT, buffer);
 
 	TCHAR szDescription[MAX_LOADSTRING];
 	LoadString(hInst, IDS_DESCRIPTIONSTRING, 
@@ -232,8 +244,23 @@ VOID SaveMetafile(HWND hWnd)
 	DeleteEnhMetaFile(currentImage);
 }
 
+VOID OpenImage(HWND hWnd, LPCWSTR fileName)
+{
+	HDC windowDC = GetDC(hWnd);
+	HENHMETAFILE hemf = GetEnhMetaFile(fileName);  
+	GetClientRect(hWnd, &rect); 
+	ClearWindow(windowDC);
+	RefreshMetafileDC(hWnd);
+	PlayEnhMetaFile(windowDC, hemf, &rect);
+	PlayEnhMetaFile(metafileDC, hemf, &rect);
+	ReleaseDC(hWnd, windowDC); 
+	DeleteEnhMetaFile(hemf);
+}
+
 VOID OpenMetafile(HWND hWnd)
 {
+	TCHAR buffer[4 * MAX_LOADSTRING];
+	OPENFILENAME openFileName = InitializeOpenFileNameStructure(hWnd, OFN_SHOWHELP | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, buffer);
 	TCHAR szFilter[MAX_LOADSTRING];
 	TCHAR szDefExt[MAX_LOADSTRING];
 	TCHAR szFile[MAX_LOADSTRING];
@@ -245,50 +272,23 @@ VOID OpenMetafile(HWND hWnd)
             szFilter[i] = '\0'; 
 	}
 	LoadString(hInst, IDS_DEFEXTSTRING, (LPTSTR)szDefExt, sizeof(szFilter)); 
+
 	szFile[0] = '\0'; 
 	szFileTitle[0] = '\0';
-	openFileName.lStructSize = sizeof(OPENFILENAME); 
-	openFileName.hwndOwner = hWnd;  
 	openFileName.lpstrFilter = szFilter;
-	openFileName.lpstrCustomFilter = (LPWSTR)NULL; 
-	openFileName.nMaxCustFilter = 0L; 
-	openFileName.nFilterIndex = 1L; 
-	openFileName.lpstrFile = szFile; 
-	openFileName.nMaxFile = MAX_LOADSTRING; 
-	openFileName.lpstrFileTitle = szFileTitle; 
-	openFileName.nMaxFileTitle = MAX_LOADSTRING; 
-	openFileName.lpstrInitialDir = (LPWSTR) NULL; 
-	openFileName.lpstrTitle = (LPWSTR)NULL; 
-	openFileName.Flags = OFN_SHOWHELP | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST; 
-	openFileName.nFileOffset = 0; 
-	openFileName.nFileExtension = 0; 
+	openFileName.lpstrFile = szFile;  
+	openFileName.lpstrFileTitle = szFileTitle;
 	openFileName.lpstrDefExt = szDefExt;
 
 	GetOpenFileName(&openFileName);
-	HDC windowDC = GetDC(hWnd);
-	HENHMETAFILE hemf = GetEnhMetaFile(openFileName.lpstrFile);  
-	GetClientRect(hWnd, &rect); 
-	ClearWindow(windowDC);
-	RefreshMetafileDC(hWnd);
-	PlayEnhMetaFile(windowDC, hemf, &rect);
-	PlayEnhMetaFile(metafileDC, hemf, &rect);
-	ReleaseDC(hWnd, windowDC); 
-	DeleteEnhMetaFile(hemf);
+	OpenImage(hWnd, openFileName.lpstrFile);
 }
 
 void OpenDropedFile(HWND hWnd, HDROP hDropInfo)
 {
 	TCHAR szFileName[MAX_PATH];
 	DragQueryFile (hDropInfo, 0, szFileName, MAX_PATH);
-	HDC windowDC = GetDC(hWnd);
-	HENHMETAFILE hemf = GetEnhMetaFile(szFileName);  
-	GetClientRect(hWnd, &rect); 
-	ClearWindow(windowDC);
-	RefreshMetafileDC(hWnd);
-	PlayEnhMetaFile(windowDC, hemf, &rect);
-	PlayEnhMetaFile(metafileDC, hemf, &rect);
-	ReleaseDC(hWnd, windowDC); 
-	DeleteEnhMetaFile(hemf);
+	OpenImage(hWnd, szFileName);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -358,6 +358,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_CREATE:
+		DragAcceptFiles(hWnd, true);
 		GetClientRect(hWnd, &rect);
 		metafileDC = InitialiseEnhMetafileDC(hWnd);
 		break;
