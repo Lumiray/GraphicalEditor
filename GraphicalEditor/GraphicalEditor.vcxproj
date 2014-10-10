@@ -80,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EllipseShape.h" />
+    <ClInclude Include="Line.h" />
     <ClInclude Include="Shape.h" />
     <ClInclude Include="GraphicalEditor.h" />
     <ClInclude Include="Pen.h" />
@@ -90,6 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EllipseShape.cpp" />
+    <ClCompile Include="Line.cpp" />
     <ClCompile Include="Shape.cpp" />
     <ClCompile Include="GraphicalEditor.cpp" />
     <ClCompile Include="Pen.cpp" />
