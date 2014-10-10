@@ -11,10 +11,12 @@ public:
 	Shape(COLORREF color, int width);
 	~Shape(void);
 	BOOL isContinuous;
+	BOOL isFinished;
 	void SetPenColor(COLORREF color);
 	void SetPenWidth(int width);
 	virtual void Draw(HDC hDC, POINT dot1, LPARAM dot2);
 	void SetStartPoint(POINT startPoint);
 	POINT GetStartPoint(void);
+	POINT startPoint;
 };
 

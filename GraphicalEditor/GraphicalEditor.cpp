@@ -322,6 +322,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			shape->~Shape();
 			shape = new Line(color, penWidth);
 			break;
+		case IDM_POLYLINE:
+			shape->~Shape();
+			shape = new PolylineShape(color, penWidth);
+			break;
 		case IDM_ELLIPSE:
 			shape->~Shape();
 			shape = new EllipseShape(color, penWidth);
@@ -386,10 +390,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			shape->Draw(metafileDC, startPoint, lParam);
 			ReleaseDC(hWnd, windowDC); 
 		} 
-		isDrawing = FALSE; 
+		if (shape->isFinished)
+		{
+			isDrawing = FALSE; 
+		}
 		UpdateWindow(hWnd);
 		break; 
- 
+	
+	case WM_RBUTTONDOWN:
+	{
+		shape->startPoint.x = -1;
+		shape->isFinished = TRUE;
+		isDrawing = FALSE;
+		break;
+	}
+
 	case WM_MOUSEMOVE: 
 		if (isDrawing) 
 		{ 
