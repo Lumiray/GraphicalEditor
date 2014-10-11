@@ -6,3 +6,4 @@
 #include "EllipseShape.h"
 #include "Pen.h"
 #include "Line.h"
+#include "PolylineShape.h"

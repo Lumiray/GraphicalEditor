@@ -7,6 +7,7 @@ Shape::Shape(COLORREF color, int width)
 	penColor = color;
 	penWidth = width;
 	isContinuous = FALSE;
+	isFinished = TRUE;
 }
 
 Shape::~Shape(void)
