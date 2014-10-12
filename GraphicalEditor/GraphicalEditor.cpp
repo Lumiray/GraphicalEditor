@@ -18,6 +18,9 @@ Shape* shape;
 COLORREF color;
 int penWidth;
 int wheelDelta = 0;
+int zoom = 0;
+int vertical_shift = 0;
+int horizontal_shift = 0;
 
 HDC memoryDC;
 HDC metafileDC;
@@ -309,6 +312,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 	HDC windowDC;
 	int keys;
+	int wheelDelta;
 	POINT tempPoint;
 
 	switch (message)
@@ -449,9 +453,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	case WM_MOUSEWHEEL:
 		if (GET_WHEEL_DELTA_WPARAM(wParam) < 0)
-			wheelDelta += 10;
+			wheelDelta = 10;
 		else 
-			wheelDelta -= 10;
+			wheelDelta = -10;
 		keys = GET_KEYSTATE_WPARAM(wParam);
 		windowDC = GetDC(hWnd);
 		if (keys == MK_CONTROL || keys == MK_SHIFT || keys == 0)
@@ -459,17 +463,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			switch(keys)
 			{
 			case MK_CONTROL:
-				FillRect(windowDC, &rect, (HBRUSH)(COLOR_WINDOW+1));
-				StretchBlt(windowDC, 0, 0, rect.right + wheelDelta , 
-					rect.bottom + rect.bottom*wheelDelta/rect.right, memoryDC, 0, 0, rect.right, rect.bottom, SRCCOPY);
+				zoom += wheelDelta;
 				break;
 			case MK_SHIFT:
+				horizontal_shift += wheelDelta;
 				// TODO: Shift Left-Right
 				break;
-			case 0: 
+			case 0:
+				vertical_shift += wheelDelta;
 				// TODO: Shift Up-Down
 				break;
 			}
+			FillRect(windowDC, &rect, (HBRUSH)(COLOR_WINDOW + 1));
+			StretchBlt(windowDC, horizontal_shift, vertical_shift,
+				rect.right + zoom,
+				rect.bottom + rect.bottom*zoom / rect.right ,
+				memoryDC, 0, 0, rect.right, rect.bottom, SRCCOPY);
 		}
 		ReleaseDC(hWnd, windowDC); 
 		break;
