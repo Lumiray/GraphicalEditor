@@ -7,3 +7,5 @@
 #include "Pen.h"
 #include "Line.h"
 #include "PolylineShape.h"
+#include "PolygonShape.h"
+#include "EraserShape.h"
