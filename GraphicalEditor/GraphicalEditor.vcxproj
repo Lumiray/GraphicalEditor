@@ -80,7 +80,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EllipseShape.h" />
+    <ClInclude Include="EraserShape.h" />
     <ClInclude Include="Line.h" />
+    <ClInclude Include="PolygonShape.h" />
     <ClInclude Include="PolylineShape.h" />
     <ClInclude Include="Shape.h" />
     <ClInclude Include="GraphicalEditor.h" />
@@ -92,7 +94,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EllipseShape.cpp" />
+    <ClCompile Include="EraserShape.cpp" />
     <ClCompile Include="Line.cpp" />
+    <ClCompile Include="PolygonShape.cpp" />
     <ClCompile Include="PolylineShape.cpp" />
     <ClCompile Include="Shape.cpp" />
     <ClCompile Include="GraphicalEditor.cpp" />

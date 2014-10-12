@@ -346,6 +346,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			shape->~Shape();
 			shape = new PolylineShape(color, penWidth);
 			break;
+		case IDM_POLYGON:
+			shape->~Shape();
+			shape = new PolygonShape(color, penWidth);
+			break;
 		case IDM_ELLIPSE:
 			shape->~Shape();
 			shape = new EllipseShape(color, penWidth);
@@ -353,6 +357,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_RECTANGLE:
 			shape->~Shape();
 			shape = new RectangleShape(color, penWidth);
+			break;
+		case IDM_ERASER:
+			shape->~Shape();
+			shape = new EraserShape(color, penWidth);
 			break;
 		case IDM_COLOR:
 			COLORREF chosenColor;
@@ -424,12 +432,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	
 	case WM_RBUTTONDOWN:
 	{
-		shape->startPoint.x = -1;
 		shape->isFinished = TRUE;
 		windowDC = GetDC(hWnd);
-		BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
-		isDrawing = FALSE; 
-		ReleaseDC(hWnd, windowDC); 
+		isDrawing = FALSE;  
+		if (shape->PolylineFirstPoint.x != -1)
+		{
+			windowDC = GetDC(hWnd);
+			shape->Draw(memoryDC, startPoint, lParam);
+			shape->Draw(metafileDC, startPoint, lParam);
+			BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+			ReleaseDC(hWnd, windowDC);
+		}
+		ReleaseDC(hWnd, windowDC);
+		shape->PolylineLastPoint.x = -1;
 		break;
 	}
 

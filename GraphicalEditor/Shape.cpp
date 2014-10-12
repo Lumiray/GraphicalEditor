@@ -8,6 +8,8 @@ Shape::Shape(COLORREF color, int width)
 	penWidth = width;
 	isContinuous = FALSE;
 	isFinished = TRUE;
+	PolylineFirstPoint.x = -1;
+	PolylineLastPoint.x = -1;
 }
 
 Shape::~Shape(void)

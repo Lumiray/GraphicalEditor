@@ -18,6 +18,7 @@ public:
 	void SetStartPoint(POINT startPoint);
 	void CancelLastAction(void);
 	POINT GetStartPoint(void);
-	POINT startPoint;
+	POINT PolylineLastPoint;
+	POINT PolylineFirstPoint;
 };
 
