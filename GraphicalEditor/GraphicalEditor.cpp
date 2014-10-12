@@ -339,6 +339,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			shape->~Shape();
 			shape = new RectangleShape(color, penWidth);
 			break;
+		case IDM_ERASER:
+			shape->~Shape();
+			shape = new EraserShape(color, penWidth);
+			break;
 		case IDM_COLOR:
 			COLORREF chosenColor;
 			if (chosenColor = GetColor(hWnd))
