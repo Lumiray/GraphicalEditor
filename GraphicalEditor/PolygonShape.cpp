@@ -55,10 +55,11 @@ void PolygonShape::Draw(HDC hDC, POINT dot1, LPARAM dot2)
 	SelectObject(hDC, old_hpen);
 	SelectObject(hDC, old_hbrush);
 	DeleteObject(hpen);
-	if (ChangeCoords == 0)
+	if (ChangeCoords == 1)
 	{
 		PolylineLastPoint.x = LOWORD(dot2); 
 		PolylineLastPoint.y = HIWORD(dot2); 
+		ChangeCoords = 0;
 	} else
 	{
 		ChangeCoords++;
