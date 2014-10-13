@@ -16,6 +16,7 @@ BOOL isDrawing = FALSE;
 POINT startPoint; 
 Shape* shape;
 COLORREF color;
+WCHAR textSymbols[MAX_LOADSTRING] = {};
 int penWidth;
 int wheelDelta = 0;
 int zoom = 0;
@@ -333,31 +334,45 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			shape->CancelLastAction();
 			break;
 		case IDM_PEN:
-			shape->~Shape();
+			if (shape != NULL)
+				shape->~Shape();
 			shape = new Pen(color, penWidth);
 			break;
 		case IDM_LINE:
-			shape->~Shape();
+			if (shape != NULL)
+				shape->~Shape();
 			shape = new Line(color, penWidth);
 			break;
 		case IDM_POLYLINE:
-			shape->~Shape();
+			if (shape != NULL)
+				shape->~Shape();
 			shape = new PolylineShape(color, penWidth);
 			break;
 		case IDM_POLYGON:
-			shape->~Shape();
+			if (shape != NULL)
+				shape->~Shape();
 			shape = new PolygonShape(color, penWidth);
 			break;
 		case IDM_ELLIPSE:
-			shape->~Shape();
+			if (shape != NULL)
+				shape->~Shape();
 			shape = new EllipseShape(color, penWidth);
 			break;
 		case IDM_RECTANGLE:
-			shape->~Shape();
+			if (shape != NULL)
+				shape->~Shape();
 			shape = new RectangleShape(color, penWidth);
 			break;
+		case IDM_TEXT:
+			if (shape != NULL)
+			{
+				shape->~Shape();
+				shape = NULL;
+			}
+			break;
 		case IDM_ERASER:
-			shape->~Shape();
+			if (shape != NULL)
+				shape->~Shape();
 			shape = new EraserShape(color, penWidth);
 			break;
 		case IDM_COLOR:
@@ -402,65 +417,114 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		OpenDropedFile(hWnd, (HDROP) wParam);
 		break;
 
-	case WM_LBUTTONDOWN: 
-		isDrawing = TRUE; 
+	case WM_LBUTTONDOWN:  
 		startPoint.x = LOWORD(lParam); 
 		startPoint.y = HIWORD(lParam); 
-		shape->SetStartPoint(startPoint);
+		if (shape != NULL)
+		{
+			isDrawing = TRUE;
+			shape->SetStartPoint(startPoint);
+		}
+		else
+		{
+			memset(textSymbols, 0, MAX_LOADSTRING);
+		}
 		break; 
 
 	case WM_LBUTTONUP: 
-		if (isDrawing) 
-		{ 
-			windowDC = GetDC(hWnd);
-			BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
-			shape->Draw(memoryDC, startPoint, lParam);
-			shape->Draw(metafileDC, startPoint, lParam);
-			ReleaseDC(hWnd, windowDC); 
-		} 
-		if (shape->isFinished)
+		if (shape != NULL)
 		{
-			windowDC = GetDC(hWnd);
-			BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
-			isDrawing = FALSE; 
-			ReleaseDC(hWnd, windowDC); 
+			if (isDrawing) 
+			{ 
+				windowDC = GetDC(hWnd);
+				BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+				shape->Draw(memoryDC, startPoint, lParam);
+				shape->Draw(metafileDC, startPoint, lParam);
+				ReleaseDC(hWnd, windowDC); 
+			} 
+			if (shape->isFinished)
+			{
+				windowDC = GetDC(hWnd);
+				BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+				isDrawing = FALSE; 
+				ReleaseDC(hWnd, windowDC); 
+			}
 		}
 		UpdateWindow(hWnd);
 		break; 
 	
 	case WM_RBUTTONDOWN:
 	{
-		shape->isFinished = TRUE;
-		isDrawing = FALSE;  
-		if (shape->PolylineFirstPoint.x != -1)
+		if (shape != NULL)
 		{
-			windowDC = GetDC(hWnd);
-			shape->Draw(memoryDC, startPoint, lParam);
-			shape->Draw(metafileDC, startPoint, lParam);
-			BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
-			ReleaseDC(hWnd, windowDC);
+			shape->isFinished = TRUE;
+			isDrawing = FALSE;  
+			if (shape->PolylineFirstPoint.x != -1)
+			{
+				windowDC = GetDC(hWnd);
+				shape->Draw(memoryDC, startPoint, lParam);
+				shape->Draw(metafileDC, startPoint, lParam);
+				BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+				ReleaseDC(hWnd, windowDC);
+			}
+			shape->PolylineLastPoint.x = -1;
 		}
-		shape->PolylineLastPoint.x = -1;
 		break;
 	}
 
 	case WM_MOUSEMOVE: 
-		if (isDrawing) 
-		{ 
-			windowDC = GetDC(hWnd);
-			if (shape->isContinuous)
-			{
-				tempPoint = shape->GetStartPoint();
-				BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
-				shape->Draw(memoryDC, startPoint, lParam);
-				shape->SetStartPoint(tempPoint);
-				shape->Draw(metafileDC, startPoint, lParam);
-			}
-			ReleaseDC(hWnd, windowDC); 
-			UpdateWindow(hWnd);
-			PostMessage(hWnd, WM_PAINT, NULL, NULL);
-		} 
+		if (shape != NULL)
+		{
+			if (isDrawing) 
+			{ 
+				windowDC = GetDC(hWnd);
+				if (shape->isContinuous)
+				{
+					tempPoint = shape->GetStartPoint();
+					BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+					shape->Draw(memoryDC, startPoint, lParam);
+					shape->SetStartPoint(tempPoint);
+					shape->Draw(metafileDC, startPoint, lParam);
+				}
+				ReleaseDC(hWnd, windowDC); 
+				UpdateWindow(hWnd);
+				PostMessage(hWnd, WM_PAINT, NULL, NULL);
+			} 
+		}
 		break; 
+
+	case WM_CHAR:
+		if (shape == NULL)
+		{
+			UINT charCode = (UINT)wParam;
+			TCHAR symbol = (TCHAR)charCode;
+
+			int i = 0;
+			while (true)
+			{
+				if (textSymbols[i] == '\0')
+				{
+					textSymbols[i] = symbol;
+					textSymbols[i + 1] = '\0';
+					break;
+				}
+				i++;
+			}
+			LPSTR str = (LPSTR)textSymbols;
+			RECT textRect;
+
+			textRect.left = startPoint.x;
+			textRect.top = startPoint.y;
+			textRect.right = startPoint.x + 500;
+			textRect.bottom = startPoint.y + 30;
+
+			DrawText(memoryDC,(LPCWSTR)str, -1, &textRect, DT_LEFT);
+			DrawText(metafileDC,(LPCWSTR)str, -1, &textRect, DT_LEFT);
+			HDC windowDC = GetDC(hWnd);
+			BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+			ReleaseDC(hWnd, windowDC);
+		}
+		break;
 
 	case WM_MOUSEWHEEL:
 		if (GET_WHEEL_DELTA_WPARAM(wParam) < 0)
@@ -478,11 +542,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			case MK_SHIFT:
 				horizontal_shift += wheelDelta;
-				// TODO: Shift Left-Right
 				break;
 			case 0:
 				vertical_shift += wheelDelta;
-				// TODO: Shift Up-Down
 				break;
 			}
 			FillRect(windowDC, &rect, (HBRUSH)(COLOR_WINDOW + 1));
