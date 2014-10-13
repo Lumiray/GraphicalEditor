@@ -79,7 +79,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
 
-	wcex.style			= CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+	wcex.style			= CS_DBLCLKS;
 	wcex.lpfnWndProc	= WndProc;
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
@@ -149,16 +149,13 @@ HDC InitialiseEnhMetafileDC(HWND hWnd)
 	HDC windowDC = GetDC(hWnd);
 	RECT newRect = GetRect(windowDC);
 	metafileDC = CreateEnhMetaFile(windowDC, NULL, &newRect, NULL);
-
 	ReleaseDC(hWnd, windowDC);
 	return metafileDC;
 }
 
 HENHMETAFILE RefreshMetafileDC(HWND hWnd)
 {
-	HDC windowDC = GetDC(hWnd);
 	HENHMETAFILE metafileHandler = CloseEnhMetaFile(metafileDC);
-	ReleaseDC (hWnd, metafileDC);
 	metafileDC = InitialiseEnhMetafileDC(hWnd);
 	return metafileHandler;
 }
@@ -189,7 +186,7 @@ VOID RefreshWindow(HWND hWnd)
 	HDC windowDC = GetDC(hWnd);
 	HENHMETAFILE currentImage = RefreshMetafileDC(hWnd);
 
-	PlayEnhMetaFile(windowDC, currentImage, &rect);
+	PlayEnhMetaFile(memoryDC, currentImage, &rect);
 	PlayEnhMetaFile(metafileDC, currentImage, &rect);
 	DeleteEnhMetaFile(currentImage);
 	ReleaseDC(hWnd, windowDC);
@@ -232,7 +229,6 @@ OPENFILENAME InitializeOpenFileNameStructure(HWND hWnd, int flags, TCHAR* buffer
 
 VOID SaveMetafile(HWND hWnd)
 { 
-	HDC windowDC = GetDC(hWnd);
 	HENHMETAFILE currentImage = RefreshMetafileDC(hWnd);
 	
 	TCHAR buffer[4 * MAX_LOADSTRING];
@@ -250,8 +246,10 @@ VOID SaveMetafile(HWND hWnd)
  
 	GetSaveFileName(&openFileName); 
 	GetClientRect(hWnd, &rect);
+	HDC windowDC = GetDC(hWnd);
 	RECT newRect = GetRect(windowDC);
 	HDC newMetafileDC = CreateEnhMetaFile(windowDC, (LPTSTR) openFileName.lpstrFile, &newRect, (LPWSTR)szDescription);
+	ReleaseDC(hWnd, windowDC);
 	PlayEnhMetaFile(newMetafileDC, currentImage, &rect);
 	currentImage = CloseEnhMetaFile(newMetafileDC);
 	PlayEnhMetaFile(metafileDC, currentImage, &rect);
@@ -261,12 +259,14 @@ VOID SaveMetafile(HWND hWnd)
 
 VOID OpenImage(HWND hWnd, LPCWSTR fileName)
 {
+	HDC windowDC = GetDC(hWnd);
 	HENHMETAFILE hemf = GetEnhMetaFile(fileName);  
 	GetClientRect(hWnd, &rect); 
 	ClearWindow(memoryDC);
 	RefreshMetafileDC(hWnd);
 	PlayEnhMetaFile(memoryDC, hemf, &rect);
 	PlayEnhMetaFile(metafileDC, hemf, &rect);
+	ReleaseDC(hWnd, windowDC); 
 	DeleteEnhMetaFile(hemf);
 }
 
@@ -431,7 +431,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_RBUTTONDOWN:
 	{
 		shape->isFinished = TRUE;
-		windowDC = GetDC(hWnd);
 		isDrawing = FALSE;  
 		if (shape->PolylineFirstPoint.x != -1)
 		{
@@ -441,7 +440,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
 			ReleaseDC(hWnd, windowDC);
 		}
-		ReleaseDC(hWnd, windowDC);
 		shape->PolylineLastPoint.x = -1;
 		break;
 	}
@@ -456,7 +454,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
 				shape->Draw(memoryDC, startPoint, lParam);
 				shape->SetStartPoint(tempPoint);
-				shape->Draw(windowDC, startPoint, lParam);
+				shape->Draw(metafileDC, startPoint, lParam);
 			}
 			ReleaseDC(hWnd, windowDC); 
 			UpdateWindow(hWnd);
