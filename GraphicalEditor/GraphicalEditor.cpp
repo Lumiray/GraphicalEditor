@@ -431,28 +431,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break; 
 	
 	case WM_RBUTTONDOWN:
-	{
-		shape->isFinished = TRUE;
-//<<<<<<< HEAD
-		isDrawing = FALSE;
-		if (shape->PolylineFirstPoint.x != -1)
 		{
+			shape->isFinished = TRUE;
 			windowDC = GetDC(hWnd);
-			shape->Draw(windowDC, startPoint, lParam);
-			shape->Draw(metafileDC, startPoint, lParam);
+			isDrawing = FALSE; 
+			if (shape->PolylineFirstPoint.x != -1)
+			{
+				windowDC = GetDC(hWnd);
+				shape->Draw(memoryDC, startPoint, lParam);
+				shape->Draw(metafileDC, startPoint, lParam);
+				BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+				ReleaseDC(hWnd, windowDC);
+			}
 			ReleaseDC(hWnd, windowDC);
+			shape->PolylineLastPoint.x = -1;
+			break;
 		}
-		shape->PolylineLastPoint.x = -1;
-//=======
-		/*
-		windowDC = GetDC(hWnd);
-		BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
-		isDrawing = FALSE; 
-		ReleaseDC(hWnd, windowDC); */
-//>>>>>>> upstream/master
-		
-	}
-	break;
 
 	case WM_MOUSEMOVE: 
 		if (isDrawing) 
