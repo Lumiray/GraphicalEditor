@@ -303,6 +303,9 @@ void OpenDropedFile(HWND hWnd, HDROP hDropInfo)
 	TCHAR szFileName[MAX_PATH];
 	DragQueryFile (hDropInfo, 0, szFileName, MAX_PATH);
 	OpenImage(hWnd, szFileName);
+	HDC windowDC = GetDC(hWnd);
+	BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+	ReleaseDC(hWnd, windowDC); 
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -531,8 +534,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			wheelDelta = -10;
 		keys = GET_KEYSTATE_WPARAM(wParam);
 		windowDC = GetDC(hWnd);
-		if (keys == MK_CONTROL || keys == MK_SHIFT || keys == 0)
-		{
 			switch(keys)
 			{
 			case MK_CONTROL:
@@ -541,7 +542,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case MK_SHIFT:
 				horizontal_shift += wheelDelta;
 				break;
-			case 0:
+			default:
 				vertical_shift += wheelDelta;
 				break;
 			}
@@ -550,7 +551,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				rect.right + zoom,
 				rect.bottom + rect.bottom*zoom / rect.right ,
 				memoryDC, 0, 0, rect.right, rect.bottom, SRCCOPY);
-		}
 		ReleaseDC(hWnd, windowDC); 
 		break;
 
