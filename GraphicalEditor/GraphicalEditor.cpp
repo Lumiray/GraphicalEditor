@@ -314,6 +314,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int keys;
 	int wheelDelta;
 	POINT tempPoint;
+	bool copyBeforeErase;
 
 	switch (message)
 	{
@@ -332,6 +333,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			OpenMetafile(hWnd); 
 			break;
 		case IDM_CANCEL:
+			/*
+				//load from metafile
+				copyBeforeErase = TRUE;
+			*/
 			shape->CancelLastAction();
 			break;
 		case IDM_PEN:
@@ -405,6 +410,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_LBUTTONDOWN: 
+		/*if ((shape->isContinuous) && (copyBeforeErase))
+		{
+			//copy to metafile
+			copyBeforeErase = FALSE;
+		}*/
 		isDrawing = TRUE; 
 		startPoint.x = LOWORD(lParam); 
 		startPoint.y = HIWORD(lParam); 
