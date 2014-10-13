@@ -6,6 +6,7 @@ PolylineShape::PolylineShape(COLORREF color, int width):Line(color, width)
 {
 	isFinished = FALSE;
 	PolylineLastPoint.x = - 1;
+	ChangeCoords = 0;
 }
 
 
@@ -28,6 +29,13 @@ void PolylineShape::Draw(HDC hDC, POINT dot1, LPARAM dot2)
 	SelectObject(hDC, old_hpen);
 	SelectObject(hDC, old_hbrush);
 	DeleteObject(hpen);
-	PolylineLastPoint.x = LOWORD(dot2); 
-	PolylineLastPoint.y = HIWORD(dot2); 
+	if (ChangeCoords == 1)
+	{
+		PolylineLastPoint.x = LOWORD(dot2); 
+		PolylineLastPoint.y = HIWORD(dot2); 
+		ChangeCoords = 0;
+	} else
+	{
+		ChangeCoords++;
+	}
 }

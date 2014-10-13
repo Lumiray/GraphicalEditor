@@ -454,7 +454,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break; 
 	
 	case WM_RBUTTONDOWN:
-	{
 		if (shape != NULL)
 		{
 			shape->isFinished = TRUE;
@@ -470,7 +469,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			shape->PolylineLastPoint.x = -1;
 		}
 		break;
-	}
 
 	case WM_MOUSEMOVE: 
 		if (shape != NULL)
