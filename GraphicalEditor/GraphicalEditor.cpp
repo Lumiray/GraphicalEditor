@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "Commdlg.h"
 #include "GraphicalEditor.h"
-#include "ShellAPI.h"
+#include "Shellapi.h"
 
 #define MAX_LOADSTRING 100
 
@@ -17,6 +17,10 @@ POINT startPoint;
 Shape* shape;
 COLORREF color;
 int penWidth;
+int wheelDelta = 0;
+int zoom = 0;
+int vertical_shift = 0;
+int horizontal_shift = 0;
 
 HDC memoryDC;
 HDC metafileDC;
@@ -125,6 +129,19 @@ RECT GetRect(HDC windowDC)
 	newRect.bottom = (rect.bottom * iHeightMM * 100)/iHeightPels;
 
 	return newRect;
+}
+
+HDC InitialiseMemoryDC(HWND hWnd)
+{
+	HDC windowDC = GetDC(hWnd);					
+	memoryDC = CreateCompatibleDC(windowDC);
+	GetClientRect(hWnd, &rect);
+	hBitmap = CreateCompatibleBitmap(windowDC, rect.right, rect.bottom);
+	SelectObject (memoryDC, hBitmap); 
+	FillRect(memoryDC, &rect, (HBRUSH)(COLOR_WINDOW+1));
+	ReleaseDC(hWnd, windowDC);
+
+	return memoryDC;
 }
 
 HDC InitialiseEnhMetafileDC(HWND hWnd)
@@ -294,6 +311,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int wmId;
 	PAINTSTRUCT ps;
 	HDC windowDC;
+	int keys;
+	int wheelDelta;
 	POINT tempPoint;
 
 	switch (message)
@@ -377,6 +396,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		DragAcceptFiles(hWnd, true);
 		GetClientRect(hWnd, &rect);
+		memoryDC = InitialiseMemoryDC(hWnd);
 		metafileDC = InitialiseEnhMetafileDC(hWnd);
 		break;
 
@@ -395,13 +415,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (isDrawing) 
 		{ 
 			windowDC = GetDC(hWnd);
-			shape->Draw(windowDC, startPoint, lParam);
+			BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+			shape->Draw(memoryDC, startPoint, lParam);
 			shape->Draw(metafileDC, startPoint, lParam);
 			ReleaseDC(hWnd, windowDC); 
 		} 
 		if (shape->isFinished)
 		{
+			windowDC = GetDC(hWnd);
+			BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
 			isDrawing = FALSE; 
+			ReleaseDC(hWnd, windowDC); 
 		}
 		UpdateWindow(hWnd);
 		break; 
@@ -409,6 +433,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_RBUTTONDOWN:
 	{
 		shape->isFinished = TRUE;
+//<<<<<<< HEAD
 		isDrawing = FALSE;
 		if (shape->PolylineFirstPoint.x != -1)
 		{
@@ -418,8 +443,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			ReleaseDC(hWnd, windowDC);
 		}
 		shape->PolylineLastPoint.x = -1;
-		break;
+//=======
+		/*
+		windowDC = GetDC(hWnd);
+		BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+		isDrawing = FALSE; 
+		ReleaseDC(hWnd, windowDC); */
+//>>>>>>> upstream/master
+		
 	}
+	break;
 
 	case WM_MOUSEMOVE: 
 		if (isDrawing) 
@@ -428,7 +461,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (shape->isContinuous)
 			{
 				tempPoint = shape->GetStartPoint();
-				shape->Draw(metafileDC, startPoint, lParam);
+				BitBlt(windowDC, 0, 0, rect.right, rect.bottom, memoryDC, 0, 0, SRCCOPY);
+				shape->Draw(memoryDC, startPoint, lParam);
 				shape->SetStartPoint(tempPoint);
 				shape->Draw(windowDC, startPoint, lParam);
 			}
@@ -437,6 +471,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			PostMessage(hWnd, WM_PAINT, NULL, NULL);
 		} 
 		break; 
+
+	case WM_MOUSEWHEEL:
+		if (GET_WHEEL_DELTA_WPARAM(wParam) < 0)
+			wheelDelta = 10;
+		else 
+			wheelDelta = -10;
+		keys = GET_KEYSTATE_WPARAM(wParam);
+		windowDC = GetDC(hWnd);
+		if (keys == MK_CONTROL || keys == MK_SHIFT || keys == 0)
+		{
+			switch(keys)
+			{
+			case MK_CONTROL:
+				zoom += wheelDelta;
+				break;
+			case MK_SHIFT:
+				horizontal_shift += wheelDelta;
+				// TODO: Shift Left-Right
+				break;
+			case 0:
+				vertical_shift += wheelDelta;
+				// TODO: Shift Up-Down
+				break;
+			}
+			FillRect(windowDC, &rect, (HBRUSH)(COLOR_WINDOW + 1));
+			StretchBlt(windowDC, horizontal_shift, vertical_shift,
+				rect.right + zoom,
+				rect.bottom + rect.bottom*zoom / rect.right ,
+				memoryDC, 0, 0, rect.right, rect.bottom, SRCCOPY);
+		}
+		ReleaseDC(hWnd, windowDC); 
+		break;
 
 	case WM_SIZE:
 		RefreshWindow(hWnd);
